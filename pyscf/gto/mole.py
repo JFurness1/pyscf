@@ -333,6 +333,8 @@ def format_atom(atoms, origin=0, axes=None,
             raise ValueError('Coordinates error in %s' % line)
         return [_atom_symbol(dat[0]), coords]
 
+    print("IN FORMAT ATOM")
+
     if isinstance(atoms, (str, unicode)):
         # The input atoms points to a geometry file
         if os.path.isfile(atoms):
@@ -382,6 +384,7 @@ def format_atom(atoms, origin=0, axes=None,
     c = numpy.array([a[1] for a in fmt_atoms], dtype=numpy.double)
     c = numpy.einsum('ix,kx->ki', axes * unit, c - origin)
     z = [a[0] for a in fmt_atoms]
+    print(atoms, type(atoms), list(zip(z, c.tolist())))
     return list(zip(z, c.tolist()))
 
 #TODO: sort exponents
@@ -2087,6 +2090,9 @@ class Mole(lib.StreamObject):
         self.ecp = {}
 # Nuclear property. self.nucprop = {atom_symbol: {key: value}}
         self.nucprop = {}
+# Nuclear charges. self.nuclear_charges = {atom_symbol:float}
+        self.nuclear_charges = {}
+
 ##################################################
 # don't modify the following private variables, they are not input options
         self._atm = numpy.zeros((0,6), dtype=numpy.int32)
@@ -2252,7 +2258,7 @@ class Mole(lib.StreamObject):
               verbose=None, output=None, max_memory=None,
               atom=None, basis=None, unit=None, nucmod=None, ecp=None,
               charge=None, spin=0, symmetry=None, symmetry_subgroup=None,
-              cart=None):
+              cart=None, nuclear_charges=None):
         '''Setup moleclue and initialize some control parameters.  Whenever you
         change the value of the attributes of :class:`Mole`, you need call
         this function to refresh the internal data of Mole.
@@ -2285,6 +2291,10 @@ class Mole(lib.StreamObject):
             symmetry : bool or str
                 Whether to use symmetry.  If given a string of point group
                 name, the given point group symmetry will be used.
+            nuclear_charges : dict or str
+                Defines non-standard (and non-integer) 
+                nuclear charges using atom labels.
+                If given, overwrite :attr:`Mole.nuclear_charges`
 
         '''
         gc.collect()  # To release circular referred objects
@@ -2307,6 +2317,7 @@ class Mole(lib.StreamObject):
         if symmetry is not None: self.symmetry = symmetry
         if symmetry_subgroup is not None: self.symmetry_subgroup = symmetry_subgroup
         if cart is not None: self.cart = cart
+        if nuclear_charges is not None: self.nuclear_charges = nuclear_charges
 
         if parse_arg:
             _update_from_cmdargs_(self)
