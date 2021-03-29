@@ -1335,7 +1335,18 @@ def energy_nuc(mol, charges=None, coords=None):
     Returns
         float
     '''
-    if charges is None: charges = mol.atom_charges()
+    if charges is None: 
+        # Work with copy of charges, not actual property
+        charges = np.array(mol.atom_charges(),dtype=numpy.float)
+
+        for i in range(len(charges)):
+            symbol = mol.atom_symbol(i)
+            try: 
+                print(symbol, mol.nuclear_charges[symbol])
+                charges[i] = mol.nuclear_charges[symbol]
+            except:
+                pass
+
     if len(charges) <= 1:
         return 0
     rr = inter_distance(mol, coords)
@@ -3282,16 +3293,14 @@ class Mole(lib.StreamObject):
         # only enter if non-standard nuclear charges have been defined
         if "int1e_nuc" in intor and bool(self.nuclear_charges):
             # pdb.set_trace()
-            foo = self.jwf_hack_frac_atoms(intor, bas, shls_slice, comp, hermi, aosym, out)
+            foo = self.non_standard_nuclear_charge_integrals(intor, bas, shls_slice, comp, hermi, aosym, out)
         else:
             foo = moleintor.getints(intor, self._atm, bas, self._env,
                                  shls_slice, comp, hermi, aosym, out=out)
         return foo
 
-    def jwf_hack_frac_atoms(self, intor, bas, shls_slice, comp, hermi, aosym, out):
+    def non_standard_nuclear_charge_integrals(self, intor, bas, shls_slice, comp, hermi, aosym, out):
         # pdb.set_trace()
-        foo = moleintor.getints(intor, self._atm, bas, self._env,
-                             shls_slice, comp, hermi, aosym, out=out)
 
         v = 0
         for i, a in enumerate(self.atom_coords()):
@@ -3300,11 +3309,9 @@ class Mole(lib.StreamObject):
                 q = self.nuclear_charges[self.atom_symbol(i)]
             except KeyError:
                 q = self.atom_charge(i)
+            print(q, "at", a)
             v += self.intor('int1e_rinv') * -q
-
-        print(numpy.allclose(foo, v))
-
-        return foo
+        return v
 
     def _add_suffix(self, intor, cart=None):
         if not (intor[:4] == 'cint' or
