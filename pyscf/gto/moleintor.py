@@ -437,7 +437,7 @@ _INTOR_FUNCTIONS = {
 
 def getints2c(intor_name, atm, bas, env, shls_slice=None, comp=1, hermi=0,
               ao_loc=None, cintopt=None, out=None):
-    atm = numpy.asarray(atm, dtype=numpy.int32, order='C')
+    atm = numpy.asarray(atm, dtype=numpy.int32, order='C')  # First entry seems to be nuclear charge
     bas = numpy.asarray(bas, dtype=numpy.int32, order='C')
     env = numpy.asarray(env, dtype=numpy.double, order='C')
     natm = atm.shape[0]
@@ -466,8 +466,9 @@ def getints2c(intor_name, atm, bas, env, shls_slice=None, comp=1, hermi=0,
         if cintopt is None:
             cintopt = make_cintopt(atm, bas, env, intor_name)
 
-        fn = getattr(libcgto, drv_name)
-        fn(getattr(libcgto, intor_name), mat.ctypes.data_as(ctypes.c_void_p),
+        # Here is where it gets the libcgto function to get the nuclear integrals 
+        fn = getattr(libcgto, drv_name) # drv_name = 'GTOint2c'
+        fn(getattr(libcgto, intor_name), mat.ctypes.data_as(ctypes.c_void_p), # intor_name = 'int1e_nuc_sph'
            ctypes.c_int(comp), ctypes.c_int(hermi),
            (ctypes.c_int*4)(*(shls_slice[:4])),
            ao_loc.ctypes.data_as(ctypes.c_void_p), cintopt,

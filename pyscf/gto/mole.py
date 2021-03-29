@@ -20,6 +20,7 @@
 Mole class and helper functions to handle paramters and attributes for GTO
 integrals. This module serves the interface to the integral library libcint.
 '''
+import pdb
 
 import os, sys
 import types
@@ -3276,8 +3277,34 @@ class Mole(lib.StreamObject):
                 shls_slice = (0, self.nbas, 0, self.nbas)
         else:
             bas = self._bas
-        return moleintor.getints(intor, self._atm, bas, self._env,
+
+
+        # only enter if non-standard nuclear charges have been defined
+        if "int1e_nuc" in intor and bool(self.nuclear_charges):
+            # pdb.set_trace()
+            foo = self.jwf_hack_frac_atoms(intor, bas, shls_slice, comp, hermi, aosym, out)
+        else:
+            foo = moleintor.getints(intor, self._atm, bas, self._env,
                                  shls_slice, comp, hermi, aosym, out=out)
+        return foo
+
+    def jwf_hack_frac_atoms(self, intor, bas, shls_slice, comp, hermi, aosym, out):
+        # pdb.set_trace()
+        foo = moleintor.getints(intor, self._atm, bas, self._env,
+                             shls_slice, comp, hermi, aosym, out=out)
+
+        v = 0
+        for i, a in enumerate(self.atom_coords()):
+            self.set_rinv_origin(a)
+            try:
+                q = self.nuclear_charges[self.atom_symbol(i)]
+            except KeyError:
+                q = self.atom_charge(i)
+            v += self.intor('int1e_rinv') * -q
+
+        print(numpy.allclose(foo, v))
+
+        return foo
 
     def _add_suffix(self, intor, cart=None):
         if not (intor[:4] == 'cint' or

@@ -35,6 +35,7 @@ from pyscf.scf import _vhf
 from pyscf.scf import chkfile
 from pyscf.data import nist
 from pyscf import __config__
+from pyscf.scf.fracnuc_ints import get_nuclear_integral_jwf
 
 WITH_META_LOWDIN = getattr(__config__, 'scf_analyze_with_meta_lowdin', True)
 PRE_ORTH_METHOD = getattr(__config__, 'scf_analyze_pre_orth_method', 'ANO')
@@ -309,6 +310,7 @@ def get_hcore(mol):
     array([[-0.93767904, -0.59316327],
            [-0.59316327, -0.93767904]])
     '''
+    print("GETTING CORE")
     h = mol.intor_symmetric('int1e_kin')
 
     if mol._pseudo:
@@ -317,6 +319,13 @@ def get_hcore(mol):
         from pyscf.gto import pp_int
         h += pp_int.get_gth_pp(mol)
     else:
+        # JWF: This is where we get the nuclear integral, we can hook out here with 
+        # fractional nuclear integrals
+        # print("intor_symmetric")
+        # if len(mol.nuclear_charges) > 0:
+        #     get_nuclear_integral_jwf(mol)
+        #     raise SystemExit("JWF nuc int")
+        # else:
         h+= mol.intor_symmetric('int1e_nuc')
 
     if len(mol._ecpbas) > 0:
