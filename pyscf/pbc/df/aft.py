@@ -117,7 +117,41 @@ def get_nuc(mydf, kpts=None):
     # Pseudopotential is ignored when computing just the nuclear attraction
     t0 = (time.clock(), time.time())
     with lib.temporary_env(mydf.cell, _pseudo={}):
-        nuc = get_pp_loc_part1(mydf, kpts)
+        if bool(mydf.cell.nuclear_charges):
+            foo = get_pp_loc_part1(mydf, kpts)
+            
+            nuc = 0
+            import pdb; pdb.set_trace()
+            standard_idxs = []
+            for i, a in enumerate(mydf.cell.atom_charges()):
+                symbol = mydf.cell.atom_symbol(i)
+                try:
+                    q = mydf.cell.nuclear_charges[symbol]
+                    # Zero out the charge of all by the atom we are interested in
+                    tmp_atm = numpy.copy(mydf.cell._atm)
+                    tmp_atm[:i, 0] = 0
+                    tmp_atm[i+1:, 0] = 0
+                    with lib.temporary_env(mydf.cell, _atm=tmp_atm):
+                        
+                        print(symbol, q, a, q/a)
+                        nuc += get_pp_loc_part1(mydf, kpts)*q/float(a)
+                except KeyError:
+                    standard_idxs.append(i)
+
+            # Now do all standard charges as a single bulk
+            if len(standard_idxs) > 0:
+                tmp_atm = numpy.copy(mydf.cell._atm)
+
+                # Zero out all the non-standard charges we have already accumulated
+                for i in range(tmp_atm.shape[0]):
+                    if i not in standard_idxs:
+                        tmp_atm[i,0] = 0
+                with lib.temporary_env(mydf.cell, _atm=tmp_atm):
+                    nuc += get_pp_loc_part1(mydf, kpts)
+
+            print(nuc.shape, foo.shape, numpy.allclose(nuc, foo))
+        else:
+            nuc = get_pp_loc_part1(mydf, kpts)
     logger.timer(mydf, 'get_nuc', *t0)
     return nuc
 
