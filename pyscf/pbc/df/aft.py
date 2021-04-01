@@ -114,6 +114,7 @@ def estimate_omega_for_ke_cutoff(cell, ke_cutoff, precision=None):
     return omega
 
 def get_nuc(mydf, kpts=None):
+    # import pdb; pdb.set_trace()
     # Pseudopotential is ignored when computing just the nuclear attraction
     t0 = (time.clock(), time.time())
     with lib.temporary_env(mydf.cell, _pseudo={}):

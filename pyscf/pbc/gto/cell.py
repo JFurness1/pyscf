@@ -754,7 +754,17 @@ def ewald(cell, ew_eta=None, ew_cut=None):
 
     if ew_eta is None: ew_eta = cell.ew_eta
     if ew_cut is None: ew_cut = cell.ew_cut
-    chargs = cell.atom_charges()
+    # import pdb; pdb.set_trace()
+    charges = cell.atom_charges().astype('float')
+    # If non standard nuclear charges are defined, replace them now
+    if bool(cell.nuclear_charges):
+        for i, a in enumerate(cell.atom_charges()):
+            symbol = cell.atom_symbol(i)
+            try:
+                charges[i] = cell.nuclear_charges[symbol]
+            except KeyError:
+                pass
+
     coords = cell.atom_coords()
     Lall = cell.get_lattice_Ls(rcut=ew_cut)
 
@@ -762,12 +772,12 @@ def ewald(cell, ew_eta=None, ew_cut=None):
     r = np.sqrt(np.einsum('Lijx,Lijx->Lij', rLij, rLij))
     rLij = None
     r[r<1e-16] = 1e200
-    ewovrl = .5 * np.einsum('i,j,Lij->', chargs, chargs, erfc(ew_eta * r) / r)
+    ewovrl = .5 * np.einsum('i,j,Lij->', charges, charges, erfc(ew_eta * r) / r)
 
     # last line of Eq. (F.5) in Martin
-    ewself  = -.5 * np.dot(chargs,chargs) * 2 * ew_eta / np.sqrt(np.pi)
+    ewself  = -.5 * np.dot(charges,charges) * 2 * ew_eta / np.sqrt(np.pi)
     if cell.dimension == 3:
-        ewself += -.5 * np.sum(chargs)**2 * np.pi/(ew_eta**2 * cell.vol)
+        ewself += -.5 * np.sum(charges)**2 * np.pi/(ew_eta**2 * cell.vol)
 
     # g-space sum (using g grid) (Eq. (F.6) in Martin, but note errors as below)
     # Eq. (F.6) in Martin is off by a factor of 2, the
@@ -786,7 +796,7 @@ def ewald(cell, ew_eta=None, ew_cut=None):
     if cell.dimension != 2 or cell.low_dim_ft_type == 'inf_vacuum':
         coulG = 4*np.pi / absG2
         coulG *= weights
-        ZSI = np.einsum("i,ij->j", chargs, cell.get_SI(Gv))
+        ZSI = np.einsum("i,ij->j", charges, cell.get_SI(Gv))
         ZexpG2 = ZSI * np.exp(-absG2/(4*ew_eta**2))
         ewg = .5 * np.einsum('i,i,i', ZSI.conj(), ZexpG2, coulG).real
 
@@ -818,10 +828,10 @@ def ewald(cell, ew_eta=None, ew_cut=None):
         # Performing the G != 0 summation.
         rij = coords[:,None,:] - coords[None,:,:]
         Gdotr = np.einsum('ijx,gx->ijg', rij, Gv)
-        ewg = np.einsum('i,j,ijg,ijg->', chargs, chargs, np.cos(Gdotr),
+        ewg = np.einsum('i,j,ijg,ijg->', charges, charges, np.cos(Gdotr),
                         gn(ew_eta,absG,rij[:,:,2:3]))
         # Performing the G == 0 summation.
-        ewg += np.einsum('i,j,ij->', chargs, chargs, gn0(ew_eta,rij[:,:,2]))
+        ewg += np.einsum('i,j,ij->', charges, charges, gn0(ew_eta,rij[:,:,2]))
         ewg *= inv_area*0.5
 
     else:

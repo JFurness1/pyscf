@@ -334,8 +334,6 @@ def format_atom(atoms, origin=0, axes=None,
             raise ValueError('Coordinates error in %s' % line)
         return [_atom_symbol(dat[0]), coords]
 
-    print("IN FORMAT ATOM")
-
     if isinstance(atoms, (str, unicode)):
         # The input atoms points to a geometry file
         if os.path.isfile(atoms):
@@ -385,7 +383,6 @@ def format_atom(atoms, origin=0, axes=None,
     c = numpy.array([a[1] for a in fmt_atoms], dtype=numpy.double)
     c = numpy.einsum('ix,kx->ki', axes * unit, c - origin)
     z = [a[0] for a in fmt_atoms]
-    print(atoms, type(atoms), list(zip(z, c.tolist())))
     return list(zip(z, c.tolist()))
 
 #TODO: sort exponents
@@ -1342,7 +1339,6 @@ def energy_nuc(mol, charges=None, coords=None):
         for i in range(len(charges)):
             symbol = mol.atom_symbol(i)
             try: 
-                print(symbol, mol.nuclear_charges[symbol])
                 charges[i] = mol.nuclear_charges[symbol]
             except:
                 pass
@@ -2957,14 +2953,21 @@ class Mole(lib.StreamObject):
         '''
         if self._atm[atm_id,NUC_MOD_OF] != NUC_FRAC_CHARGE:
             # regular QM atoms
-            return self._atm[atm_id,CHARGE_OF]
+            try:
+                return self.nuclear_charges[self.atom_symbol(atm_id)]
+            except KeyError:
+                return self._atm[atm_id,CHARGE_OF]
         else:
             # MM atoms with fractional charges
             return self._env[self._atm[atm_id,PTR_FRAC_CHARGE]]
 
     def atom_charges(self):
         '''np.asarray([mol.atom_charge(i) for i in range(mol.natm)])'''
-        z = self._atm[:,CHARGE_OF]
+        if self.nuclear_charges:
+            z = np.asarray([self.atom_charge(i) for i in range(self.natm)])
+        else:
+            z = self._atm[:,CHARGE_OF]
+
         if numpy.any(self._atm[:,NUC_MOD_OF] == NUC_FRAC_CHARGE):
             # Create the integer nuclear charges first then replace the MM
             # particles with the MM charges that saved in _env[PTR_FRAC_CHARGE]
@@ -2977,7 +2980,8 @@ class Mole(lib.StreamObject):
     def atom_nelec_core(self, atm_id):
         '''Number of core electrons for pseudo potential.
         '''
-        return charge(self.atom_symbol(atm_id)) - self.atom_charge(atm_id)
+        # Handle fractional charges by rounding to the nearest integer.
+        return charge(self.atom_symbol(atm_id)) - int(round(self.atom_charge(atm_id)))
 
     def atom_coord(self, atm_id, unit='Bohr'):
         r'''Coordinates (ndarray) of the given atom id
@@ -3309,7 +3313,6 @@ class Mole(lib.StreamObject):
                 q = self.nuclear_charges[self.atom_symbol(i)]
             except KeyError:
                 q = self.atom_charge(i)
-            print(q, "at", a)
             v += self.intor('int1e_rinv') * -q
         return v
 
