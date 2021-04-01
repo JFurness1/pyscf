@@ -137,15 +137,7 @@ def get_pp_loc_part1(mydf, kpts=None):
     nao = cell.nao_nr()
     nao_pair = nao * (nao+1) // 2
 
-    charges = cell.atom_charges().astype('float')
-    # If non standard nuclear charges are defined, replace them now
-    if bool(mydf.cell.nuclear_charges):
-        for i, a in enumerate(mydf.cell.atom_charges()):
-            symbol = mydf.cell.atom_symbol(i)
-            try:
-                charges[i] = mydf.cell.nuclear_charges[symbol]
-            except KeyError:
-                pass
+    charges = cell.atom_charges()
 
     kpt_allow = numpy.zeros(3)
     if mydf.eta == 0:

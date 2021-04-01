@@ -754,16 +754,8 @@ def ewald(cell, ew_eta=None, ew_cut=None):
 
     if ew_eta is None: ew_eta = cell.ew_eta
     if ew_cut is None: ew_cut = cell.ew_cut
-    # import pdb; pdb.set_trace()
-    charges = cell.atom_charges().astype('float')
-    # If non standard nuclear charges are defined, replace them now
-    if bool(cell.nuclear_charges):
-        for i, a in enumerate(cell.atom_charges()):
-            symbol = cell.atom_symbol(i)
-            try:
-                charges[i] = cell.nuclear_charges[symbol]
-            except KeyError:
-                pass
+
+    charges = cell.atom_charges()
 
     coords = cell.atom_coords()
     Lall = cell.get_lattice_Ls(rcut=ew_cut)
