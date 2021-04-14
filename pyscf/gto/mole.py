@@ -1332,13 +1332,13 @@ def energy_nuc(mol, charges=None, coords=None):
     Returns
         float
     '''
-    if charges is None: 
+    if charges is None:
         # Work with copy of charges, not actual property
         charges = np.array(mol.atom_charges(),dtype=numpy.float)
 
         for i in range(len(charges)):
             symbol = mol.atom_symbol(i)
-            try: 
+            try:
                 charges[i] = mol.nuclear_charges[symbol]
             except:
                 pass
@@ -2300,7 +2300,7 @@ class Mole(lib.StreamObject):
                 Whether to use symmetry.  If given a string of point group
                 name, the given point group symmetry will be used.
             nuclear_charges : dict or str
-                Defines non-standard (and non-integer) 
+                Defines non-standard (and non-integer)
                 nuclear charges using atom labels.
                 If given, overwrite :attr:`Mole.nuclear_charges`
 
@@ -2936,7 +2936,7 @@ class Mole(lib.StreamObject):
         '''A list of elements in the molecule'''
         return [self.atom_pure_symbol(i) for i in range(self.natm)]
 
-    def atom_charge(self, atm_id):
+    def atom_charge(self, atm_id, force_pure=False):
         r'''Nuclear effective charge of the given atom id
         Note "atom_charge /= charge(atom_symbol)" when ECP is enabled.
         Number of electrons screened by ECP can be obtained by charge(atom_symbol)-atom_charge
@@ -2952,6 +2952,8 @@ class Mole(lib.StreamObject):
         17
         '''
         if self._atm[atm_id,NUC_MOD_OF] != NUC_FRAC_CHARGE:
+            if force_pure:
+                return self._atm[atm_id,CHARGE_OF]
             # regular QM atoms
             try:
                 return self.nuclear_charges[self.atom_symbol(atm_id)]
@@ -2981,7 +2983,7 @@ class Mole(lib.StreamObject):
         '''Number of core electrons for pseudo potential.
         '''
         # Handle fractional charges by rounding to the nearest integer.
-        return charge(self.atom_symbol(atm_id)) - int(round(self.atom_charge(atm_id)))
+        return charge(self.atom_symbol(atm_id)) - self.atom_charge(atm_id,force_pure=True)
 
     def atom_coord(self, atm_id, unit='Bohr'):
         r'''Coordinates (ndarray) of the given atom id
