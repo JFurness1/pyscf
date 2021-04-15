@@ -1336,6 +1336,7 @@ def energy_nuc(mol, charges=None, coords=None):
         # Work with copy of charges, not actual property
         charges = np.array(mol.atom_charges(),dtype=numpy.float)
 
+        # JWF: Does this still need to be here now atom_charges returns fractional?
         for i in range(len(charges)):
             symbol = mol.atom_symbol(i)
             try:

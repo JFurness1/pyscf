@@ -97,6 +97,7 @@ def aux_e2(cell, auxcell_or_auxbasis, intor='int3c2e', aosym='s1', comp=None,
     out = numpy.empty((nkptij,comp,nao_pair,naux), dtype=dtype)
     out = int3c(shls_slice, out)
 
+
 #    if contr_coeff is not None:
 #        if aosym == 's2':
 #            tmp = out.reshape(nkptij,comp,ni,ni,naux)
@@ -113,6 +114,14 @@ def aux_e2(cell, auxcell_or_auxbasis, intor='int3c2e', aosym='s1', comp=None,
 #            out = lib.einsum('kcpql,pi->kciql', out, contr_coeff)
 #            out = lib.einsum('kciql,qj->kcijl', out, contr_coeff)
 #            out = out.reshape(nkptij,comp,-1,naux)
+    if cell.nuclear_charges:
+        # If we have fractional nuclear charges we should re-scale these integrals
+        charges = cell.atom_charges()
+        nc = len(charges)
+        for i, c in enumerate(charges):
+            scale = c/cell._atm[i,0]
+            out[i] *= scale         # _atm entry from cell
+            out[i + nc] *= scale    # _atm entry from tight Gaussian
 
     if comp == 1:
         out = out[:,0]

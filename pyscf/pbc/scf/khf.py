@@ -87,6 +87,7 @@ def get_hcore(mf, cell=None, kpts=None):
     '''
     if cell is None: cell = mf.cell
     if kpts is None: kpts = mf.kpts
+
     if cell.pseudo:
         nuc = lib.asarray(mf.with_df.get_pp(kpts))
     else:
